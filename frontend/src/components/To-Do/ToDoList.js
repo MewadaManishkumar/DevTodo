@@ -15,9 +15,15 @@ import {
 } from "antd";
 import axios from "axios";
 import "./ToDoList.css";
-import { DeleteTwoTone, EditTwoTone, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  DeleteTwoTone,
+  EditTwoTone,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import authService from "../../services/auth-service";
 import moment from "moment";
+import { Pagination } from "antd";
 
 const TodoList = () => {
   const [tasks, setTasks] = useState([]);
@@ -28,6 +34,8 @@ const TodoList = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const userId = authService.getCurrentUser();
   const inputRef = useRef(null);
@@ -156,103 +164,123 @@ const TodoList = () => {
   };
 
   const filterTasks = (tasks, searchQuery) => {
-    if (!searchQuery) {
-      return tasks;
-    }
+  if (!searchQuery) {
+    return tasks;
+  }
 
-    const filteredTasks = tasks.filter((task) => {
-      const taskText = task.task.toLowerCase();
-      const categoryNames = task.categoryId.map((category) =>
-        category.name.toLowerCase()
-      );
-      const query = searchQuery.toLowerCase();
+  const filteredTasks = tasks.filter((task) => {
+    const taskText = task.task.toLowerCase();
+    const categoryNames = task.categoryId.map((category) =>
+      category.name.toLowerCase()
+    );
+    const query = searchQuery.toLowerCase();
 
-      return (
-        taskText.includes(query) ||
-        categoryNames.some((name) => name.includes(query))
-      );
-    });
+    return (
+      taskText.includes(query) ||
+      categoryNames.some((name) => name.includes(query)) ||
+      query === ""
+    );
+  });
 
-    return filteredTasks;
-  };
+  return filteredTasks;
+};
 
   return (
     <>
-      <Row justify="center" style={{ marginBottom: '20px' }}>
-                <Col>
-                    <Typography.Title level={1} style={{ textAlign: 'center' }}>Task List</Typography.Title>
-                </Col>
-            </Row>
-            <Row justify="end" style={{ marginBottom: '30px' }}>
-                <Col span={12} style={{ paddingRight: '10px' }}>
-                    <Input
-                        placeholder="Filter by task or category..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ width: '600px', fontSize: '16px' }}
-                        prefix={<SearchOutlined />}
-                        allowClear
-                    />
-                </Col>
-            </Row>
-            <Row justify="center" style={{ marginBottom: '20px' }}>
-                <Col span={12} style={{ paddingRight: '10px', paddingLeft: '20px' }}>
-                    <Input
-                        placeholder="Enter a new task"
-                        value={newTask}
-                        onChange={(event) => setNewTask(event.target.value)}
-                        style={{ width: '100%' }}
-                        allowClear
-                    />
-                </Col>
-                <Col span={10} style={{ paddingRight: '10px' }}>
-                    <Select
-                        mode="multiple"
-                        placeholder="Select category"
-                        value={selectedCategory || []}
-                        onChange={(value) => { setSelectedCategory(value && value.length > 0 ? value : null) }}
-                        filterOption={(input, option) =>
-                            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-                        }
-                        dropdownRender={(menu) => (
-                            <>
-                                {menu}
-                                <Divider
-                                    style={{ margin: "8px 0" }}
-                                />
-                                <Space
-                                    style={{ padding: "0 8px 4px" }}
-                                >
-                                    <Input
-                                        placeholder="Create new category"
-                                        value={newCategory}
-                                        onChange={(e) => setNewCategory(e.target.value)} />
-                                    <Button type="text" icon={<PlusOutlined />} onClick={addCategory}>Add Category</Button>
-                                </Space>
-                            </>
-                        )}
-                        options={categories.map((category) => ({
-                            label: <strong>{category.name}</strong>,
-                            value: category._id
-                        }))}
-                        style={{ width: '100%' }}
-                    />
-                </Col>
-                <Col span={2} style={{ paddingLeft: '10px' }}>
-                    <Button type="primary" onClick={handleNewTaskSubmit}>Add Task</Button>
-                </Col>
-            </Row>
-            <List
-                dataSource={filterTasks(tasks, searchQuery)}
-                renderItem={(task) => {
-                    const isEditingTask = isEditing && isEditing.taskId === task._id;
-                    return (
-                        <List.Item style={{ width: "100%", margin: 'auto', display: "flex", justifyContent: 'center' }}>
-                            <Checkbox
-                                checked={task.completed}
-                                onChange={() => handleCheckToggle(task)}
-                                style={{ padding: '10px' }}
-                            />
+      <Row justify="center" style={{ marginBottom: "20px" }}>
+        <Col>
+          <Typography.Title level={1} style={{ textAlign: "center" }}>
+            Task List
+          </Typography.Title>
+        </Col>
+      </Row>
+      <Row justify="end" style={{ marginBottom: "30px" }}>
+        <Col span={12} style={{ paddingRight: "10px" }}>
+          <Input
+            placeholder="Filter by task or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: "600px", fontSize: "16px" }}
+            prefix={<SearchOutlined />}
+            allowClear
+          />
+        </Col>
+      </Row>
+      <Row justify="center" style={{ marginBottom: "20px" }}>
+        <Col span={12} style={{ paddingRight: "10px", paddingLeft: "20px" }}>
+          <Input
+            placeholder="Enter a new task"
+            value={newTask}
+            onChange={(event) => setNewTask(event.target.value)}
+            style={{ width: "100%" }}
+            allowClear
+          />
+        </Col>
+        <Col span={10} style={{ paddingRight: "10px" }}>
+          <Select
+            mode="multiple"
+            placeholder="Select category"
+            value={selectedCategory || []}
+            onChange={(value) => {
+              setSelectedCategory(value && value.length > 0 ? value : null);
+            }}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+            dropdownRender={(menu) => (
+              <>
+                {menu}
+                <Divider style={{ margin: "8px 0" }} />
+                <Space style={{ padding: "0 8px 4px" }}>
+                  <Input
+                    placeholder="Create new category"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                  />
+                  <Button
+                    type="text"
+                    icon={<PlusOutlined />}
+                    onClick={addCategory}
+                  >
+                    Add Category
+                  </Button>
+                </Space>
+              </>
+            )}
+            options={categories.map((category) => ({
+              label: <strong>{category.name}</strong>,
+              value: category._id,
+            }))}
+            style={{ width: "100%" }}
+          />
+        </Col>
+        <Col span={2} style={{ paddingLeft: "10px" }}>
+          <Button type="primary" onClick={handleNewTaskSubmit}>
+            Add Task
+          </Button>
+        </Col>
+      </Row>
+      <List
+        dataSource={filterTasks(tasks, searchQuery).slice(
+          (currentPage - 1) * pageSize,
+          currentPage * pageSize
+        )}
+        renderItem={(task) => {
+          const isEditingTask = isEditing && isEditing.taskId === task._id;
+          return (
+            <List.Item
+              style={{
+                width: "100%",
+                margin: "auto",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <Checkbox
+                checked={task.completed}
+                onChange={() => handleCheckToggle(task)}
+                style={{ padding: "10px" }}
+              />
               {isEditingTask ? (
                 <>
                   <Input
@@ -362,6 +390,18 @@ const TodoList = () => {
           );
         }}
       />
+      <Row justify="center" style={{ marginTop: "20px" }}>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={filterTasks(tasks, searchQuery).length}
+          onChange={(page) => setCurrentPage(page)}
+          showSizeChanger
+          onShowSizeChange={(current, size) => setPageSize(size)}
+          showQuickJumper
+          showTotal={(total) => `Total ${total} tasks`}
+        />
+      </Row>
     </>
   );
 };
